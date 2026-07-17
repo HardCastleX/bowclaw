@@ -23,15 +23,48 @@ workspace/
 
 ## Setup
 
-```bash
+Compatible con Windows y Linux (incluyendo WSL). El código no depende de rutas ni
+comandos específicos de un SO; solo cambia cómo activas el entorno virtual y qué
+binario de Ghidra apuntas en `GHIDRA_PATH`.
+
+### Windows
+
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env   # completar con tus valores reales
+copy .env.example .env
 ```
+
+`GHIDRA_PATH` debe apuntar a `analyzeHeadless.bat` (ej. `C:\ghidra\support\analyzeHeadless.bat`).
+
+### Linux / WSL
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+`GHIDRA_PATH` debe apuntar al script sin extensión (ej. `/opt/ghidra_11.0/support/analyzeHeadless`).
+
+En ambos casos, completa `.env` con tu `GEMINI_API_KEY` real y la ruta de `GHIDRA_PATH`
+correspondiente a tu instalación.
 
 ## Uso
 
 ```bash
-python main.py
+python main.py [ruta/al/binario]
 ```
 
-> Estado actual: arquitectura base, lógica pendiente de implementación.
+Si no se pasa un binario, se auto-detecta el único archivo en `workspace/input/`.
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+> Estado actual: pipeline completo implementado (Ghidra → chunking → Gemini → reporte),
+> con logging, limpieza automática y tests (16 pasando). Pendiente: probar con Ghidra real.
