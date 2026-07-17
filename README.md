@@ -21,6 +21,19 @@ workspace/
   reports/                # Reportes generados
 ```
 
+## Prerrequisitos
+
+- **Ghidra 11 o superior** instalado (no viene incluido en este repo).
+- **Java (JDK) 21 o superior** — requisito de Ghidra 11/12. Si no lo tienes, usa el
+  script de instalación automática incluido en `scripts/` (ver más abajo).
+- Python 3.10+.
+
+`GHIDRA_PATH` en `.env` debe apuntar al **script `analyzeHeadless` dentro de
+`support/`**, no a la carpeta raíz de la instalación de Ghidra:
+
+- Windows: `C:\ruta\a\ghidra_12.x\support\analyzeHeadless.bat`
+- Linux/WSL: `/ruta/a/ghidra_12.x/support/analyzeHeadless`
+
 ## Setup
 
 Compatible con Windows y Linux (incluyendo WSL). El código no depende de rutas ni
@@ -30,6 +43,9 @@ binario de Ghidra apuntas en `GHIDRA_PATH`.
 ### Windows
 
 ```powershell
+# Opcional: instala Java 21 automaticamente si no lo tienes (no hace nada si ya cumples el requisito)
+.\scripts\install_java.ps1
+
 python -m venv venv
 .\venv\Scripts\activate
 pip install -r requirements.txt
@@ -41,6 +57,10 @@ copy .env.example .env
 ### Linux / WSL
 
 ```bash
+# Opcional: instala Java 21 automaticamente si no lo tienes (no hace nada si ya cumples el requisito)
+bash scripts/install_java.sh
+source ~/.bashrc   # o abre una nueva terminal, para que JAVA_HOME/PATH tomen efecto
+
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
