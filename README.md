@@ -1,18 +1,21 @@
 # Orquestador de Ingeniería Inversa
 
-Orquestador en Python que coordina Ghidra (análisis headless) y la API de Gemini
-(Google AI Studio) para automatizar el flujo de ingeniería inversa: extracción, troceo y análisis de binarios.
+Orquestador en Python que coordina Ghidra (análisis headless) y un proveedor de LLM
+configurable (Gemini, DeepSeek, o un servidor local/open-source compatible con OpenAI)
+para automatizar el flujo de ingeniería inversa: extracción, troceo y análisis de binarios.
 
 ## Estructura
 
 ```
-main.py                  # Orquestador principal
-config.json              # Configuración no sensible
-.env                      # Secretos (GHIDRA_PATH, GEMINI_API_KEY) - no versionado
+main.py                  # Orquestador + factory de clientes LLM (build_llm_client)
+config.json              # Configuración no sensible (incluye llm_provider)
+.env                      # Secretos (GHIDRA_PATH, *_API_KEY) - no versionado
 modules/
   ghidra_runner.py        # Ejecuta Ghidra en modo headless
   data_chunker.py         # Trocea y limpia la data extraída
-  gemini_client.py        # Cliente async para la API de Gemini
+  gemini_client.py        # Cliente async para la API nativa de Gemini
+  openai_compatible_client.py  # Cliente generico (DeepSeek real, o servidores
+                                # locales/open-source: Ollama, LM Studio, vLLM, etc.)
 ghidra_scripts/
   extractor.py            # Script Jython ejecutado dentro de Ghidra
 workspace/
@@ -84,8 +87,35 @@ cp .env.example .env
 
 `GHIDRA_PATH` debe apuntar al script sin extensión (ej. `/opt/ghidra_11.0/support/analyzeHeadless`).
 
-En ambos casos, completa `.env` con tu `GEMINI_API_KEY` real y la ruta de `GHIDRA_PATH`
-correspondiente a tu instalación.
+En ambos casos, completa `.env` con la API key del proveedor que vayas a usar y la
+ruta de `GHIDRA_PATH` correspondiente a tu instalación.
+
+## Elegir proveedor de LLM
+
+`config.json` tiene un campo `llm_provider` con tres opciones ya soportadas:
+
+```json
+"llm_provider": "gemini",   // "gemini" | "deepseek" | "local"
+"providers": {
+    "gemini":   { "model": "gemini-3.1-flash-lite", "pro_model": "gemini-3-flash-preview" },
+    "deepseek": { "base_url": "https://api.deepseek.com/v1", "model": "deepseek-chat", "pro_model": "deepseek-reasoner" },
+    "local":    { "base_url": "http://localhost:11434/v1", "model": "llama3", "pro_model": "llama3" }
+}
+```
+
+- **`gemini`**: API nativa de Google AI Studio (`GEMINI_API_KEY` en `.env`).
+- **`deepseek`**: API oficial real de DeepSeek, formato compatible con OpenAI
+  (`DEEPSEEK_API_KEY` en `.env`).
+- **`local`**: cualquier servidor open-source/auto-hospedado que exponga un endpoint
+  `/chat/completions` compatible con OpenAI — Ollama, LM Studio, vLLM,
+  text-generation-webui, llama.cpp server, etc. No suele requerir API key
+  (`LOCAL_API_KEY` puede quedar vacío en `.env`); solo ajusta `base_url` y `model`
+  al nombre del modelo que tengas cargado en tu servidor.
+
+Para agregar otro proveedor compatible con OpenAI, solo agrega una entrada nueva en
+`providers` y una rama en `build_llm_client()` (`main.py`) reutilizando
+`OpenAICompatibleClient` — no hace falta escribir un cliente nuevo salvo que el
+proveedor use un formato de API distinto al de OpenAI (como el caso de Gemini).
 
 ## Uso
 

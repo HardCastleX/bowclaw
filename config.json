@@ -1,8 +1,23 @@
 {
     "_comment": "Valores no sensibles de configuracion. Los secretos (API keys, paths locales) viven en .env",
     "max_chunk_size": 4000,
-    "gemini_model": "gemini-3.1-flash-lite",
-    "gemini_pro_model": "gemini-3-flash-preview",
+    "llm_provider": "gemini",
+    "providers": {
+        "gemini": {
+            "model": "gemini-3.1-flash-lite",
+            "pro_model": "gemini-3-flash-preview"
+        },
+        "deepseek": {
+            "base_url": "https://api.deepseek.com/v1",
+            "model": "deepseek-chat",
+            "pro_model": "deepseek-reasoner"
+        },
+        "local": {
+            "base_url": "http://localhost:11434/v1",
+            "model": "llama3",
+            "pro_model": "llama3"
+        }
+    },
     "workspace": {
         "input": "workspace/input",
         "temp_projects": "workspace/temp_projects",

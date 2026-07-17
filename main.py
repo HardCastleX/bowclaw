@@ -11,9 +11,43 @@ from dotenv import load_dotenv
 from modules.ghidra_runner import GhidraRunner
 from modules.data_chunker import DataChunker
 from modules.gemini_client import GeminiClient
+from modules.openai_compatible_client import OpenAICompatibleClient
 from utils.logger import setup_logging
 
 logger = logging.getLogger(__name__)
+
+
+def build_llm_client(config):
+    """Instancia el cliente LLM segun config['llm_provider']: 'gemini', 'deepseek',
+    'local', o cualquier otra entrada agregada a config['providers'] que use un
+    endpoint compatible con OpenAI (chat completions)."""
+    provider = config.get("llm_provider", "gemini")
+    provider_config = config.get("providers", {}).get(provider, {})
+
+    if provider == "gemini":
+        return GeminiClient(
+            api_key=os.environ["GEMINI_API_KEY"],
+            model=provider_config.get("model", "gemini-3.1-flash-lite"),
+            pro_model=provider_config.get("pro_model", "gemini-3-flash-preview"),
+        )
+
+    if provider == "deepseek":
+        return OpenAICompatibleClient(
+            base_url=provider_config.get("base_url", "https://api.deepseek.com/v1"),
+            api_key=os.environ["DEEPSEEK_API_KEY"],
+            model=provider_config.get("model", "deepseek-chat"),
+            pro_model=provider_config.get("pro_model"),
+        )
+
+    if provider == "local":
+        return OpenAICompatibleClient(
+            base_url=provider_config.get("base_url", "http://localhost:11434/v1"),
+            api_key=os.environ.get("LOCAL_API_KEY"),
+            model=provider_config.get("model", "llama3"),
+            pro_model=provider_config.get("pro_model"),
+        )
+
+    raise ValueError("llm_provider desconocido: %s" % provider)
 
 
 class ReverseEngineeringOrchestrator:
@@ -25,11 +59,7 @@ class ReverseEngineeringOrchestrator:
             project_dir=self.config["workspace"]["temp_projects"],
         )
         self.chunker = DataChunker(max_chunk_size=self.config["max_chunk_size"])
-        self.gemini_client = GeminiClient(
-            api_key=os.environ["GEMINI_API_KEY"],
-            model=self.config.get("gemini_model", "gemini-3.5-flash"),
-            pro_model=self.config.get("gemini_pro_model", "gemini-3.1-pro-preview"),
-        )
+        self.llm_client = build_llm_client(self.config)
 
     def _load_config(self, config_path):
         with open(config_path, "r", encoding="utf-8") as f:
@@ -49,8 +79,8 @@ class ReverseEngineeringOrchestrator:
         data = self.chunker.load_raw_data(extracted_json_path)
         return self.chunker.chunk_functions(data)
 
-    def analyze_with_gemini(self, chunks, use_pro=False):
-        return asyncio.run(self.gemini_client.analyze_all_chunks(chunks, use_pro=use_pro))
+    def analyze_with_llm(self, chunks, use_pro=False):
+        return asyncio.run(self.llm_client.analyze_all_chunks(chunks, use_pro=use_pro))
 
     def generate_report(self, binary_path, analysis_results):
         binary_name = os.path.splitext(os.path.basename(binary_path))[0]
@@ -81,8 +111,8 @@ class ReverseEngineeringOrchestrator:
         chunks = self.chunk_extracted_data(extracted_json_path)
         logger.info("Datos troceados en %s chunks", len(chunks))
 
-        analysis_results = self.analyze_with_gemini(chunks)
-        logger.info("Analisis con Gemini completado")
+        analysis_results = self.analyze_with_llm(chunks)
+        logger.info("Analisis con LLM (%s) completado", self.config.get("llm_provider", "gemini"))
 
         report_path = self.generate_report(binary_path, analysis_results)
         logger.info("Reporte generado: %s", report_path)
