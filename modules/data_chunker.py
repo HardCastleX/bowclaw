@@ -40,7 +40,7 @@ class DataChunker:
         return chunks
 
     def chunk_functions(self, extracted_data):
-        """Convierte el JSON de extractor.py en chunks de texto listos para DeepSeek."""
+        """Convierte el JSON de extractor.py en chunks de texto listos para Gemini."""
         chunks = []
         for entry in extracted_data.get("decompiled", []):
             header = "// Function: %s @ %s\n" % (

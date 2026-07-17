@@ -1,6 +1,6 @@
 """
 Prueba end-to-end del pipeline completo, simulando las dos dependencias
-externas (Ghidra y la API de DeepSeek) ya que no siempre estan disponibles
+externas (Ghidra y la API de Gemini) ya que no siempre estan disponibles
 en el entorno de desarrollo.
 """
 import json
@@ -49,7 +49,7 @@ class TestOrchestratorEndToEnd(unittest.TestCase):
 
         self.env_patch = patch.dict(os.environ, {
             "GHIDRA_PATH": "C:\\fake\\ghidra\\analyzeHeadless.bat",
-            "DEEPSEEK_API_KEY": "fake-key",
+            "GEMINI_API_KEY": "fake-key",
         })
         self.env_patch.start()
 
@@ -57,9 +57,9 @@ class TestOrchestratorEndToEnd(unittest.TestCase):
         self.env_patch.stop()
         shutil.rmtree(self.tmp_dir, ignore_errors=True)
 
-    @patch("main.DeepSeekClient.analyze_all_chunks")
+    @patch("main.GeminiClient.analyze_all_chunks")
     @patch("main.GhidraRunner.run_headless_analysis")
-    def test_full_pipeline_produces_report(self, mock_ghidra, mock_deepseek):
+    def test_full_pipeline_produces_report(self, mock_ghidra, mock_gemini):
         def fake_ghidra_run(binary_path, script_name, output_path, timeout=600):
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(FAKE_EXTRACTED_DATA, f)
@@ -67,12 +67,12 @@ class TestOrchestratorEndToEnd(unittest.TestCase):
 
         mock_ghidra.side_effect = fake_ghidra_run
 
-        async def fake_analyze(chunks):
+        async def fake_analyze(chunks, use_pro=False):
             return [
                 "Esta funcion es el punto de entrada del programa." for _ in chunks
             ]
 
-        mock_deepseek.side_effect = fake_analyze
+        mock_gemini.side_effect = fake_analyze
 
         orchestrator = ReverseEngineeringOrchestrator(config_path=self.config_path)
         report_path = orchestrator.run(self.binary_path)
@@ -85,7 +85,7 @@ class TestOrchestratorEndToEnd(unittest.TestCase):
         self.assertIn("Fragmento 1", content)
         self.assertIn("punto de entrada", content)
         mock_ghidra.assert_called_once()
-        mock_deepseek.assert_called_once()
+        mock_gemini.assert_called_once()
 
 
 if __name__ == "__main__":

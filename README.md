@@ -1,18 +1,18 @@
 # Orquestador de Ingeniería Inversa
 
-Orquestador en Python que coordina Ghidra (análisis headless) y la API de DeepSeek
-para automatizar el flujo de ingeniería inversa: extracción, troceo y análisis de binarios.
+Orquestador en Python que coordina Ghidra (análisis headless) y la API de Gemini
+(Google AI Studio) para automatizar el flujo de ingeniería inversa: extracción, troceo y análisis de binarios.
 
 ## Estructura
 
 ```
 main.py                  # Orquestador principal
 config.json              # Configuración no sensible
-.env                      # Secretos (GHIDRA_PATH, DEEPSEEK_API_KEY) - no versionado
+.env                      # Secretos (GHIDRA_PATH, GEMINI_API_KEY) - no versionado
 modules/
   ghidra_runner.py        # Ejecuta Ghidra en modo headless
   data_chunker.py         # Trocea y limpia la data extraída
-  deepseek_client.py      # Cliente async para la API de DeepSeek
+  gemini_client.py        # Cliente async para la API de Gemini
 ghidra_scripts/
   extractor.py            # Script Jython ejecutado dentro de Ghidra
 workspace/
