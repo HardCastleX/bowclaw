@@ -1,0 +1,9 @@
+{
+    "_comment": "Valores no sensibles de configuracion. Los secretos (API keys, paths locales) viven en .env",
+    "max_chunk_size": 4000,
+    "workspace": {
+        "input": "workspace/input",
+        "temp_projects": "workspace/temp_projects",
+        "reports": "workspace/reports"
+    }
+}

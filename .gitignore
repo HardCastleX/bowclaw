@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+
+workspace/input/*
+!workspace/input/.gitkeep
+
+workspace/temp_projects/*
+!workspace/temp_projects/.gitkeep
+
+workspace/reports/*
+!workspace/reports/.gitkeep
