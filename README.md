@@ -34,6 +34,21 @@ workspace/
 - Windows: `C:\ruta\a\ghidra_12.x\support\analyzeHeadless.bat`
 - Linux/WSL: `/ruta/a/ghidra_12.x/support/analyzeHeadless`
 
+### Ghidra 11+ y Jython
+
+Desde Ghidra 11, el motor **PyGhidra** (integrado) tiene prioridad sobre **Jython**
+para ejecutar scripts `.py`, y `ghidra_scripts/extractor.py` está escrito para Jython
+(el motor clásico, Python 2). Si corres el pipeline y ves el error
+`"Ghidra was not started with PyGhidra. Python is not available"`, necesitas:
+
+1. Instalar la extensión Jython que ya viene empaquetada con la release oficial de
+   Ghidra (`Extensions/Ghidra/*_Jython.zip`), usando `scripts/install_ghidra_jython.ps1`
+   (Windows) o `scripts/install_ghidra_jython.sh` (Linux/WSL) — leen `GHIDRA_PATH` de
+   `.env` automáticamente.
+2. Deshabilitar el módulo PyGhidra integrado para que deje de competir por los `.py`:
+   renombra `Ghidra/Features/PyGhidra` a `Ghidra/Features/PyGhidra.disabled` dentro de
+   tu instalación de Ghidra (reversible, solo renombra de vuelta si lo necesitas).
+
 ## Setup
 
 Compatible con Windows y Linux (incluyendo WSL). El código no depende de rutas ni
@@ -86,5 +101,13 @@ Si no se pasa un binario, se auto-detecta el único archivo en `workspace/input/
 python -m unittest discover -s tests -v
 ```
 
-> Estado actual: pipeline completo implementado (Ghidra → chunking → Gemini → reporte),
-> con logging, limpieza automática y tests (16 pasando). Pendiente: probar con Ghidra real.
+> Estado actual: pipeline completo implementado y **validado end-to-end con Ghidra y
+> Gemini reales** (extracción, chunking, análisis y reporte), con logging, limpieza
+> automática y tests (16 pasando).
+>
+> Nota sobre cuotas: el tier gratuito de la API de Gemini tiene límites diarios muy
+> bajos por modelo (algunos en 0 o 20 requests/día dependiendo del modelo y proyecto).
+> Si ves errores 429 persistentes, revisa qué modelos tienen cuota disponible en tu
+> cuenta (`GET /v1beta/models` + probar `generateContent` contra candidatos) y ajusta
+> `gemini_model`/`gemini_pro_model` en `config.json`, o habilita facturación en
+> Google AI Studio para límites mayores.

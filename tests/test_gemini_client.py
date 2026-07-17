@@ -15,7 +15,7 @@ class TestGeminiClient(unittest.TestCase):
 
     def test_build_url_uses_default_model(self):
         url = self.client._build_url(self.client.model)
-        self.assertIn("gemini-3.5-flash", url)
+        self.assertIn("gemini-3.1-flash-lite", url)
         self.assertTrue(url.endswith(":generateContent"))
 
     def test_build_payload_adds_thinking_config_for_pro(self):

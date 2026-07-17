@@ -1,8 +1,8 @@
 {
     "_comment": "Valores no sensibles de configuracion. Los secretos (API keys, paths locales) viven en .env",
     "max_chunk_size": 4000,
-    "gemini_model": "gemini-3.5-flash",
-    "gemini_pro_model": "gemini-3.1-pro-preview",
+    "gemini_model": "gemini-3.1-flash-lite",
+    "gemini_pro_model": "gemini-3-flash-preview",
     "workspace": {
         "input": "workspace/input",
         "temp_projects": "workspace/temp_projects",

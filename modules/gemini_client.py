@@ -7,8 +7,8 @@ import aiohttp
 logger = logging.getLogger(__name__)
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = "gemini-3.5-flash"
-DEFAULT_PRO_MODEL = "gemini-3.1-pro-preview"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
+DEFAULT_PRO_MODEL = "gemini-3-flash-preview"
 
 ANALYSIS_PROMPT = (
     "Eres un analista de ingenieria inversa. Analiza el siguiente codigo "
@@ -23,8 +23,8 @@ class GeminiClient:
         api_key,
         model=DEFAULT_MODEL,
         pro_model=DEFAULT_PRO_MODEL,
-        max_concurrency=5,
-        max_retries=3,
+        max_concurrency=2,
+        max_retries=5,
     ):
         self.api_key = api_key
         self.model = model
@@ -60,6 +60,7 @@ class GeminiClient:
 
         async with self.semaphore:
             for attempt in range(1, self.max_retries + 1):
+                wait_seconds = min(60, 5 * (2 ** (attempt - 1)))
                 try:
                     async with session.post(
                         url,
@@ -70,16 +71,23 @@ class GeminiClient:
                         if response.status == 200:
                             data = await response.json()
                             return data["candidates"][0]["content"]["parts"][0]["text"]
+                        if response.status == 429:
+                            retry_after = response.headers.get("Retry-After")
+                            if retry_after:
+                                try:
+                                    wait_seconds = max(wait_seconds, float(retry_after))
+                                except ValueError:
+                                    pass
                         logger.warning(
-                            "Gemini request failed (status %s), attempt %s/%s",
-                            response.status, attempt, self.max_retries,
+                            "Gemini request failed (status %s), attempt %s/%s, esperando %ss",
+                            response.status, attempt, self.max_retries, wait_seconds,
                         )
                 except (aiohttp.ClientError, asyncio.TimeoutError) as exc:
                     logger.warning(
-                        "Gemini request error: %s, attempt %s/%s",
-                        exc, attempt, self.max_retries,
+                        "Gemini request error: %s, attempt %s/%s, esperando %ss",
+                        exc, attempt, self.max_retries, wait_seconds,
                     )
-                await asyncio.sleep(2 ** attempt)
+                await asyncio.sleep(wait_seconds)
 
         raise RuntimeError("Gemini analysis failed after %s retries" % self.max_retries)
 
