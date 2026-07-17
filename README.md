@@ -8,6 +8,7 @@ para automatizar el flujo de ingeniería inversa: extracción, troceo y análisi
 
 ```
 main.py                  # Orquestador + factory de clientes LLM (build_llm_client)
+app.py                   # GUI web (Streamlit) - subir binario, elegir proveedor, ver log en vivo y reporte
 config.json              # Configuración no sensible (incluye llm_provider)
 .env                      # Secretos (GHIDRA_PATH, *_API_KEY) - no versionado
 modules/
@@ -118,6 +119,20 @@ Para agregar otro proveedor compatible con OpenAI, solo agrega una entrada nueva
 proveedor use un formato de API distinto al de OpenAI (como el caso de Gemini).
 
 ## Uso
+
+### Interfaz web (Streamlit)
+
+```bash
+streamlit run app.py
+```
+
+Abre una pestaña en el navegador donde puedes: subir un binario, elegir el proveedor
+LLM desde un dropdown (persiste tu eleccion en `config.json`), ver el log en vivo
+(output de Ghidra + razonamiento del modelo) mientras corre, y descargar/ver el
+reporte final en Markdown al terminar. Corre localmente, no expone nada a internet
+por defecto.
+
+### Linea de comandos
 
 ```bash
 python main.py [ruta/al/binario]
