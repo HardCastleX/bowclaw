@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from modules.ghidra_runner import GhidraRunner
 from modules.data_chunker import DataChunker
 from modules.deepseek_client import DeepSeekClient
+from utils.logger import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -106,10 +107,7 @@ def _resolve_binary_path(config):
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
+    setup_logging()
     load_dotenv()
 
     orchestrator = ReverseEngineeringOrchestrator()

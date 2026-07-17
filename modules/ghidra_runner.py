@@ -1,6 +1,7 @@
 """Modulo encargado de invocar Ghidra en modo headless."""
 import logging
 import os
+import shutil
 import subprocess
 
 logger = logging.getLogger(__name__)
@@ -26,26 +27,42 @@ class GhidraRunner:
         logger.info("Running Ghidra headless: %s", " ".join(command))
 
         try:
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise GhidraRunError(
-                "Ghidra headless analysis timed out after %ss" % timeout
-            ) from exc
+            try:
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    check=False,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise GhidraRunError(
+                    "Ghidra headless analysis timed out after %ss" % timeout
+                ) from exc
 
-        if result.returncode != 0:
-            raise GhidraRunError(
-                "Ghidra headless analysis failed (code %s): %s"
-                % (result.returncode, result.stderr)
-            )
+            if result.returncode != 0:
+                raise GhidraRunError(
+                    "Ghidra headless analysis failed (code %s): %s"
+                    % (result.returncode, result.stderr)
+                )
 
-        logger.debug("Ghidra stdout: %s", result.stdout)
-        return output_path
+            logger.debug("Ghidra stdout: %s", result.stdout)
+            return output_path
+        finally:
+            self.cleanup_project(project_name)
+
+    def cleanup_project(self, project_name):
+        """Elimina artefactos residuales del proyecto en project_dir.
+
+        -deleteProject ya limpia el proyecto en el caso exitoso; esto cubre
+        los casos de timeout/error donde Ghidra no llega a hacer esa limpieza.
+        """
+        for suffix in (".gpr", ".rep"):
+            path = os.path.join(self.project_dir, project_name + suffix)
+            if os.path.isdir(path):
+                shutil.rmtree(path, ignore_errors=True)
+            elif os.path.isfile(path):
+                os.remove(path)
 
     def _build_command(self, binary_path, script_name, output_path, project_name):
         return [

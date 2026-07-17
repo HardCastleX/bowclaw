@@ -83,12 +83,12 @@ workspace/
   - Entrada del binario (CLI arg vs auto-detección en `workspace/input/`)
 
 ### Fase 5 — Robustez (DevSecOps)
-- [ ] Logging estructurado (`utils/logger.py`)
-- [ ] Limpieza automática de `workspace/temp_projects/`
-- [ ] Manejo de errores/reintentos en todo el pipeline
-- [ ] Validación de que `.env` nunca se versione (ya en `.gitignore`)
-- [ ] `requirements.txt` completo (incluir `aiohttp` si se usa)
-- [ ] Tests unitarios básicos por módulo
+- [x] Logging estructurado (`utils/logger.py`) — archivo + consola
+- [x] Limpieza automática de `workspace/temp_projects/` (`GhidraRunner.cleanup_project`, en `finally`)
+- [x] Manejo de errores/reintentos en todo el pipeline (Ghidra: timeout/exit code; DeepSeek: backoff exponencial)
+- [x] Validación de que `.env` nunca se versione (ya en `.gitignore`)
+- [x] `requirements.txt` completo (incluye `aiohttp`)
+- [x] Tests unitarios básicos por módulo (`tests/`, 12 tests, `py -m unittest discover -s tests`)
 
 ---
 
