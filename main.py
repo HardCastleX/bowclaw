@@ -17,7 +17,7 @@ from utils.logger import setup_logging
 logger = logging.getLogger(__name__)
 
 
-def build_llm_client(config):
+def build_llm_client(config, verbose=False):
     """Instancia el cliente LLM segun config['llm_provider']: 'gemini', 'deepseek',
     'local', o cualquier otra entrada agregada a config['providers'] que use un
     endpoint compatible con OpenAI (chat completions)."""
@@ -29,6 +29,7 @@ def build_llm_client(config):
             api_key=os.environ["GEMINI_API_KEY"],
             model=provider_config.get("model", "gemini-3.1-flash-lite"),
             pro_model=provider_config.get("pro_model", "gemini-3-flash-preview"),
+            verbose=verbose,
         )
 
     if provider == "deepseek":
@@ -37,6 +38,7 @@ def build_llm_client(config):
             api_key=os.environ["DEEPSEEK_API_KEY"],
             model=provider_config.get("model", "deepseek-chat"),
             pro_model=provider_config.get("pro_model"),
+            verbose=verbose,
         )
 
     if provider == "local":
@@ -45,21 +47,24 @@ def build_llm_client(config):
             api_key=os.environ.get("LOCAL_API_KEY"),
             model=provider_config.get("model", "llama3"),
             pro_model=provider_config.get("pro_model"),
+            verbose=verbose,
         )
 
     raise ValueError("llm_provider desconocido: %s" % provider)
 
 
 class ReverseEngineeringOrchestrator:
-    def __init__(self, config_path="config.json"):
+    def __init__(self, config_path="config.json", verbose=False):
         self.config = self._load_config(config_path)
+        self.verbose = verbose
 
         self.ghidra_runner = GhidraRunner(
             ghidra_path=os.environ["GHIDRA_PATH"],
             project_dir=self.config["workspace"]["temp_projects"],
+            verbose=verbose,
         )
         self.chunker = DataChunker(max_chunk_size=self.config["max_chunk_size"])
-        self.llm_client = build_llm_client(self.config)
+        self.llm_client = build_llm_client(self.config, verbose=verbose)
 
     def _load_config(self, config_path):
         with open(config_path, "r", encoding="utf-8") as f:
@@ -120,9 +125,9 @@ class ReverseEngineeringOrchestrator:
         return report_path
 
 
-def _resolve_binary_path(config):
-    if len(sys.argv) > 1:
-        return sys.argv[1]
+def _resolve_binary_path(config, args):
+    if args:
+        return args[0]
 
     input_dir = config["workspace"]["input"]
     candidates = [
@@ -141,11 +146,17 @@ def _resolve_binary_path(config):
 
 
 def main():
-    setup_logging()
+    raw_args = sys.argv[1:]
+    # Verbose esta activado por defecto; usa --quiet/-q para desactivarlo.
+    quiet = "--quiet" in raw_args or "-q" in raw_args
+    verbose = not quiet
+    args = [a for a in raw_args if a not in ("--verbose", "-v", "--quiet", "-q")]
+
+    setup_logging(level=logging.DEBUG if verbose else logging.INFO)
     load_dotenv()
 
-    orchestrator = ReverseEngineeringOrchestrator()
-    binary_path = _resolve_binary_path(orchestrator.config)
+    orchestrator = ReverseEngineeringOrchestrator(verbose=verbose)
+    binary_path = _resolve_binary_path(orchestrator.config, args)
     report_path = orchestrator.run(binary_path)
 
     print("Reporte generado en: %s" % report_path)

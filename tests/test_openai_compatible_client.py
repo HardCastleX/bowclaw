@@ -33,6 +33,27 @@ class TestOpenAICompatibleClient(unittest.TestCase):
         payload = client._build_payload("int main(){}", use_pro=True)
         self.assertEqual(payload["model"], "smart")
 
+    def test_extract_text_returns_content_and_logs_reasoning_when_verbose(self):
+        client = OpenAICompatibleClient(
+            base_url="https://api.example.com/v1", model="test-model", verbose=True
+        )
+        data = {"choices": [{"message": {
+            "content": "respuesta final",
+            "reasoning_content": "razonando paso a paso...",
+        }}]}
+        with self.assertLogs("modules.openai_compatible_client", level="INFO") as cm:
+            result = client._extract_text(data)
+        self.assertEqual(result, "respuesta final")
+        self.assertTrue(any("razonando paso a paso" in msg for msg in cm.output))
+
+    def test_extract_text_ignores_reasoning_when_not_verbose(self):
+        data = {"choices": [{"message": {
+            "content": "respuesta final",
+            "reasoning_content": "razonando paso a paso...",
+        }}]}
+        result = self.client._extract_text(data)
+        self.assertEqual(result, "respuesta final")
+
     def test_analyze_chunk_returns_content_on_success(self):
         mock_response = AsyncMock()
         mock_response.status = 200

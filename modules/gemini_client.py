@@ -25,12 +25,14 @@ class GeminiClient:
         pro_model=DEFAULT_PRO_MODEL,
         max_concurrency=2,
         max_retries=5,
+        verbose=False,
     ):
         self.api_key = api_key
         self.model = model
         self.pro_model = pro_model
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.max_retries = max_retries
+        self.verbose = verbose
 
     def _build_url(self, model):
         return "%s/%s:generateContent" % (GEMINI_API_BASE, model)
@@ -48,10 +50,30 @@ class GeminiClient:
             ]
         }
         if use_pro:
-            payload["generationConfig"] = {
-                "thinkingConfig": {"thinkingLevel": "high"}
-            }
+            thinking_config = {"thinkingLevel": "high"}
+            if self.verbose:
+                thinking_config["includeThoughts"] = True
+            payload["generationConfig"] = {"thinkingConfig": thinking_config}
         return payload
+
+    def _extract_text(self, data):
+        """Separa las partes de razonamiento ('thought') de la respuesta final.
+        Si verbose esta activo, loguea el razonamiento; siempre retorna solo
+        el texto de la respuesta final."""
+        parts = data["candidates"][0]["content"]["parts"]
+        answer_parts = []
+        thought_parts = []
+        for part in parts:
+            text = part.get("text", "")
+            if part.get("thought"):
+                thought_parts.append(text)
+            else:
+                answer_parts.append(text)
+
+        if self.verbose and thought_parts:
+            logger.info("[gemini-thinking] %s", "\n".join(thought_parts))
+
+        return "".join(answer_parts)
 
     async def analyze_chunk(self, session, chunk, use_pro=False):
         model = self.pro_model if use_pro else self.model
@@ -70,7 +92,7 @@ class GeminiClient:
                     ) as response:
                         if response.status == 200:
                             data = await response.json()
-                            return data["candidates"][0]["content"]["parts"][0]["text"]
+                            return self._extract_text(data)
                         if response.status == 429:
                             retry_after = response.headers.get("Retry-After")
                             if retry_after:

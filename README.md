@@ -125,6 +125,21 @@ python main.py [ruta/al/binario]
 
 Si no se pasa un binario, se auto-detecta el único archivo en `workspace/input/`.
 
+### Verbose (activado por defecto)
+
+Por defecto se muestra en vivo:
+- El output completo de Ghidra (`[ghidra] ...`) linea por linea mientras corre el analisis headless.
+- El razonamiento del modelo (`[gemini-thinking] ...` o `[reasoning] ...`) cuando el
+  proveedor lo expone — Gemini con `use_pro=True` (thinking), o `deepseek-reasoner`
+  (campo `reasoning_content`). En ambos casos, el reporte final solo incluye la
+  respuesta, nunca el razonamiento crudo.
+
+Para silenciar esto y volver al comportamiento minimo (solo INFO de alto nivel):
+
+```bash
+python main.py --quiet [ruta/al/binario]
+```
+
 ## Tests
 
 ```bash

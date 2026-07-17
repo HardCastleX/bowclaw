@@ -29,6 +29,7 @@ class OpenAICompatibleClient:
         pro_model=None,
         max_concurrency=2,
         max_retries=5,
+        verbose=False,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -36,6 +37,7 @@ class OpenAICompatibleClient:
         self.pro_model = pro_model or model
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.max_retries = max_retries
+        self.verbose = verbose
 
     def _build_url(self):
         return "%s/chat/completions" % self.base_url
@@ -54,6 +56,16 @@ class OpenAICompatibleClient:
             ],
         }
 
+    def _extract_text(self, data):
+        """Algunos modelos (ej. deepseek-reasoner) exponen su razonamiento en
+        el campo 'reasoning_content' junto al contenido final. Si verbose esta
+        activo, se loguea; siempre se retorna solo el contenido final."""
+        message = data["choices"][0]["message"]
+        reasoning = message.get("reasoning_content")
+        if self.verbose and reasoning:
+            logger.info("[reasoning] %s", reasoning)
+        return message["content"]
+
     async def analyze_chunk(self, session, chunk, use_pro=False):
         url = self._build_url()
         payload = self._build_payload(chunk, use_pro=use_pro)
@@ -70,7 +82,7 @@ class OpenAICompatibleClient:
                     ) as response:
                         if response.status == 200:
                             data = await response.json()
-                            return data["choices"][0]["message"]["content"]
+                            return self._extract_text(data)
                         if response.status == 429:
                             retry_after = response.headers.get("Retry-After")
                             if retry_after:
